@@ -1,5 +1,6 @@
 #include "md5.h"
 #include "ds.h"
+#include <endian.h>
 #include <stdint.h>
 
 uint32_t s[64] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
@@ -26,9 +27,9 @@ uint32_t c0 = 0x98badcfe; // C
 uint32_t d0 = 0x10325476; // D
 
 typedef struct message_array {
-    uint8_t *items;
-    uint32_t count;
-    uint32_t capacity;
+        uint8_t *items;
+        uint32_t count;
+        uint32_t capacity;
 } message_array;
 
 static int build_message(const char *input, struct message_array *m) {
@@ -67,7 +68,7 @@ static void md5_hash(struct message_array *m, uint32_t *a, uint32_t *b,
         uint32_t D = *d;
 
         // Main loop:
-        for (int i = 0; i < 63; i++) {
+        for (int i = 0; i < 64; i++) {
             uint32_t F = 0;
             uint32_t g = 0;
 
@@ -89,7 +90,7 @@ static void md5_hash(struct message_array *m, uint32_t *a, uint32_t *b,
             A = D;
             D = C;
             C = B;
-            B = B + (F << s[i]) | (F >> (32 - s[i]));
+            B = B + ((F << s[i]) | (F >> (32 - s[i])));
         }
 
         // Add this chunk's hash to result so far:
@@ -115,7 +116,8 @@ int md5_hash_digest(const char *input, char *digest) {
 
     md5_hash(&m, &a, &b, &c, &d);
 
-    snprintf(digest, 33, "%08x%08x%08x%08x", a, b, c, d);
+    snprintf(digest, 33, "%08x%08x%08x%08x", htobe32(a), htobe32(b), htobe32(c),
+             htobe32(d));
 
 defer:
     if (m.items != NULL) {
